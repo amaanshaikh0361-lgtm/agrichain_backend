@@ -4,23 +4,34 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-app.use(cors()); // Netlify se request allow karne ke liye
+app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection logic
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("AgriChain DB Connected! 🚀"))
-  .catch(err => console.error("DB Connection Error:", err));
+  .catch(err => console.error("DB Error:", err));
 
-// Sample API Route for Inventory
-const Batch = require('./models/Batch');
+// Model
+const Batch = mongoose.model('Batch', new mongoose.Schema({
+  batchId: String,
+  crop: String,
+  farmerName: String,
+  quantity: Number,
+  grade: String,
+  storedDate: { type: Date, default: Date.now }
+}));
+
+// Routes
+app.get('/', (req, res) => res.send("Backend is Running, Bhai!"));
+
 app.get('/api/inventory', async (req, res) => {
-    try {
-        const inventory = await Batch.find();
-        res.json(inventory);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+  try {
+    const data = await Batch.find();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
