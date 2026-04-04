@@ -14,9 +14,9 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("AgriChain DB Connected! 🚀"))
   .catch(err => console.error("DB Error:", err));
 
-// Schema
+// Schema (batchId mein hum emoji save kar rahe hain)
 const Batch = mongoose.model('Batch', new mongoose.Schema({
-  batchId: String,
+  batchId: { type: String, default: "📦" }, 
   crop: String,
   farmerName: String,
   quantity: Number,
@@ -32,7 +32,7 @@ const verifyKey = (req, res, next) => {
 
 // --- ROUTES ---
 
-// 1. Get All Data (Dashboard View)
+// 1. Get All Data
 app.get('/api/inventory', async (req, res) => {
   try {
     const data = await Batch.find().sort({ storedDate: -1 });
@@ -40,15 +40,11 @@ app.get('/api/inventory', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. Farmer Public Post (No Key Needed)
+// 2. Farmer Public Post (Listing Request)
 app.post('/api/public/list-crop', async (req, res) => {
   try {
-    const farmerEntry = new Batch({
-      ...req.body,
-      batchId: "REQ-" + Math.floor(1000 + Math.random() * 9000),
-      grade: "Pending Verification"
-    });
-    await farmerEntry.save();
+    const newEntry = new Batch(req.body);
+    await newEntry.save();
     res.status(201).json({ message: "Request Sent!" });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -65,5 +61,13 @@ app.put('/api/inventory/verify/:id', verifyKey, async (req, res) => {
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// 4. Admin Delete (Secure)
+app.delete('/api/inventory/:id', verifyKey, async (req, res) => {
+  try {
+    await Batch.findByIdAndDelete(req.params.id);
+    res.json({ message: "Deleted Successfully" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server on ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
