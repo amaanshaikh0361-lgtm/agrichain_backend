@@ -14,7 +14,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("AgriChain DB Connected! 🚀"))
   .catch(err => console.error("DB Error:", err));
 
-// Model
+// Schema
 const Batch = mongoose.model('Batch', new mongoose.Schema({
   batchId: String,
   crop: String,
@@ -24,13 +24,15 @@ const Batch = mongoose.model('Batch', new mongoose.Schema({
   storedDate: { type: Date, default: Date.now }
 }));
 
-// SECURITY MIDDLEWARE
+// Security Middleware
 const verifyKey = (req, res, next) => {
   if (req.headers['x-api-key'] === ADMIN_SECRET_KEY) next();
   else res.status(403).json({ error: "Access Denied" });
 };
 
-// 1. GET ALL DATA (Public view for Dashboard)
+// --- ROUTES ---
+
+// 1. Get All Data (Public)
 app.get('/api/inventory', async (req, res) => {
   try {
     const data = await Batch.find().sort({ storedDate: -1 });
@@ -38,16 +40,7 @@ app.get('/api/inventory', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. ADMIN POST (Secure - For verified entries)
-app.post('/api/inventory', verifyKey, async (req, res) => {
-  try {
-    const newBatch = new Batch({ ...req.body, grade: "A (Verified)" });
-    await newBatch.save();
-    res.status(201).json({ message: "Verified Entry Saved!" });
-  } catch (err) { res.status(400).json({ error: err.message }); }
-});
-
-// 3. FARMER POST (Public - For new listings)
+// 2. Farmer Public Post
 app.post('/api/public/list-crop', async (req, res) => {
   try {
     const farmerEntry = new Batch({
@@ -60,5 +53,17 @@ app.post('/api/public/list-crop', async (req, res) => {
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// 3. Admin Verify/Accept (Secure)
+app.put('/api/inventory/verify/:id', verifyKey, async (req, res) => {
+  try {
+    const updated = await Batch.findByIdAndUpdate(
+      req.params.id, 
+      { grade: "A (Verified)" }, 
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+app.listen(PORT, () => console.log(`Server on ${PORT}`));
