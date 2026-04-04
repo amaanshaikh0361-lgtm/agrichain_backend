@@ -32,7 +32,7 @@ const verifyKey = (req, res, next) => {
 
 // --- ROUTES ---
 
-// 1. Get All Data (Public)
+// 1. Get All Data (Dashboard View)
 app.get('/api/inventory', async (req, res) => {
   try {
     const data = await Batch.find().sort({ storedDate: -1 });
@@ -40,7 +40,7 @@ app.get('/api/inventory', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. Farmer Public Post
+// 2. Farmer Public Post (No Key Needed)
 app.post('/api/public/list-crop', async (req, res) => {
   try {
     const farmerEntry = new Batch({
